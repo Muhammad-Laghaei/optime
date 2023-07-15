@@ -1,8 +1,8 @@
 // why jsx?!!!
 // jsx is stand for javaScript XML we doesn't need jsx we just need js or ts file
 // we can use json-server for mock data and watch data.json
-
-const mockData = [
+// this file is JSX because of you tell in task
+export const mockData = [
   {
     id: 1,
     name: "ali",
@@ -158,9 +158,3 @@ const mockData = [
     replyMessages: [],
   },
 ];
-
-export default function getMockData(page: number) {
-  const pickedData = mockData.slice(0, page * 10);
-  const newHasMore = mockData.length > page * 10;
-  return { pickedData, newHasMore };
-}

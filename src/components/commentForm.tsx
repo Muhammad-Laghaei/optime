@@ -1,4 +1,4 @@
-import { useState,useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Grid, TextField, Button, Typography } from "@mui/material";
 
 //types
@@ -10,7 +10,6 @@ interface Props {
     isReplyMessage: boolean
   ) => void;
   isReplyMessage: boolean;
-  replyedMessageId: number | null;
 }
 
 // we can use react-hook-form and control form
@@ -20,13 +19,13 @@ const CommentForm = (props: Props) => {
   const [message, setMessage] = useState<string>("");
 
   //props
-  const { submitHandler, isReplyMessage, replyedMessageId } = props;
+  const { submitHandler, isReplyMessage } = props;
 
   //effect
   useEffect(() => {
-    setMessage('')
+    setMessage("");
     setName("");
-  }, [replyedMessageId]);
+  }, [submitHandler]);
 
   //JSX
   return (

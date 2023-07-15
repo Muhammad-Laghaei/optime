@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Box } from "@mui/material";
 import { ClickAwayListener } from "@mui/base";
 // DATA
-import getMockData from "../data";
+import { mockData } from "../data";
 //Components
 import Comment from "../components/comment";
 import CommentForm from "../components/commentForm";
@@ -21,12 +21,12 @@ interface ShoMore {
 const Comments = () => {
   //variables
   const [showMore, setShowMore] = useState<ShoMore>({});
-  const [data, setData] = useState<CommentType[]>([]);
+  const [data, setData] = useState<CommentType[]>(mockData);
   const [replyedMessageId, setReplyedMessageId] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState<number>(1);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const latestId = useRef(27);
-  const observer = useRef<any>();
+  const observer = useRef<IntersectionObserver | null>(null);
   const Url = "";
 
   // handlers
@@ -67,6 +67,8 @@ const Comments = () => {
       newComment.replyMessages = [];
       newData.push(newComment);
     }
+    const newHasMore = newData.length > pageNumber * 10;
+    if (newHasMore) setHasMore(newHasMore);
     setData(newData);
     setReplyedMessageId(null);
     latestId.current = latestId.current + 1;
@@ -97,32 +99,28 @@ const Comments = () => {
 
   // get data request example
   const getData = async () => {
-    let data = [];
-    if (Url) {
-      // we can use then.catch instead of this logic and that logic is better performance becouse we don't use await in that logic
-      // i use just GET method but we can use POST and DELETE methods for create and remove API
-      try {
-        // we can use axios instead
-        const response = await fetch(Url, {
-          method: "GET", // *GET, POST, PUT, DELETE, etc.
-          headers: {
-            "Content-Type": "application/json",
-          },
-          // body: for pass data
-        });
-        data = JSON.parse(response.toString()).data;
-      } catch (error) {
-        console.log(error);
-      }
-    } else {
-      const { pickedData, newHasMore } = getMockData(pageNumber);
-      data = pickedData;
-      setHasMore(newHasMore);
+    // we can use then.catch instead of this logic and that logic is better performance becouse we don't use await in that logic
+    // i use just GET method but we can use POST and DELETE methods for create and remove API
+    try {
+      // we can use axios instead
+      const response = await fetch(Url, {
+        method: "GET", // *GET, POST, PUT, DELETE, etc.
+        headers: {
+          "Content-Type": "application/json",
+        },
+        // body: for pass data
+      });
+      const newData = JSON.parse(response.toString()).data;
+      setData(newData);
+    } catch (error) {
+      console.log(error);
     }
-    setData(data);
+
+    const newHasMore = data.length > pageNumber * 10;
+    setHasMore(newHasMore);
   };
 
-  // infinity loop logic
+  // infinity scroll logic
   const lastCommentElementRef = useCallback(
     (node: HTMLElement) => {
       if (observer.current) observer.current.disconnect();
@@ -137,8 +135,13 @@ const Comments = () => {
   );
 
   // effect
+
   useEffect(() => {
-    getData();
+    if (Url) {
+      getData();
+    }
+    const newHasMore = data.length > pageNumber * 10;
+    setHasMore(newHasMore);
   }, [pageNumber]);
 
   //JSX
@@ -157,65 +160,65 @@ const Comments = () => {
         <CommentForm
           submitHandler={submitCommentHandler}
           isReplyMessage={false}
-          replyedMessageId={replyedMessageId}
         />
       </Box>
-      {data.map((comment: CommentType, index: number) => {
-        // we can add this part in another component for better readability
-        return (
-          <Box
-            ref={data.length === index + 1 ? lastCommentElementRef : null}
-            sx={{
-              padding: "10px",
-              margin: "10px auto",
-              width: "50%",
-            }}
-            key={comment.id}
-          >
-            <Comment
-              showMoreHandler={showMoreHandler}
-              replyToCommentHandler={replyToCommentHandler}
-              comment={comment}
-              removeCommentHandler={removeCommentHandler}
-            />
-            {replyedMessageId == comment.id && (
-              <ClickAwayListener onClickAway={handleClickAway}>
-                <Box
-                  sx={{
-                    // width: "50%",
-                    margin: "2px auto",
-                    padding: "20px",
-                    borderBottom: "black solid 1px",
-                  }}
-                >
-                  <CommentForm
-                    isReplyMessage={true}
-                    submitHandler={submitCommentHandler}
-                    replyedMessageId={replyedMessageId}
-                  />
-                </Box>
-              </ClickAwayListener>
-            )}
-            {showMore[comment.id] &&
-              comment.replyMessages?.map(
-                (replyMessage: Omit<CommentType, "replyMessages">) => {
-                  return (
-                    <Box
-                      sx={{ padding: "10px 100px 0 0" }}
-                      key={replyMessage.id}
-                    >
-                      <Comment
-                        comment={replyMessage}
-                        removeCommentHandler={removeCommentHandler}
-                        parentId={comment.id}
-                      />
-                    </Box>
-                  );
-                }
+      {data
+        .slice(0, pageNumber * 10)
+        .map((comment: CommentType, index: number) => {
+          // we can add this part in another component for better readability
+          return (
+            <Box
+              ref={pageNumber * 10 === index + 1 ? lastCommentElementRef : null}
+              sx={{
+                padding: "10px",
+                margin: "10px auto",
+                width: "50%",
+              }}
+              key={comment.id}
+            >
+              <Comment
+                showMoreHandler={showMoreHandler}
+                replyToCommentHandler={replyToCommentHandler}
+                comment={comment}
+                removeCommentHandler={removeCommentHandler}
+              />
+              {replyedMessageId == comment.id && (
+                <ClickAwayListener onClickAway={handleClickAway}>
+                  <Box
+                    sx={{
+                      // width: "50%",
+                      margin: "2px auto",
+                      padding: "20px",
+                      borderBottom: "black solid 1px",
+                    }}
+                  >
+                    <CommentForm
+                      isReplyMessage={true}
+                      submitHandler={submitCommentHandler}
+                    />
+                  </Box>
+                </ClickAwayListener>
               )}
-          </Box>
-        );
-      })}
+              {showMore[comment.id] &&
+                comment.replyMessages?.map(
+                  (replyMessage: Omit<CommentType, "replyMessages">) => {
+                    return (
+                      <Box
+                        sx={{ padding: "10px 100px 0 0" }}
+                        key={replyMessage.id}
+                      >
+                        <Comment
+                          comment={replyMessage}
+                          removeCommentHandler={removeCommentHandler}
+                          parentId={comment.id}
+                        />
+                      </Box>
+                    );
+                  }
+                )}
+            </Box>
+          );
+        })}
     </>
   );
 };

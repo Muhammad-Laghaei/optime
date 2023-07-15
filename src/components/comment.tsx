@@ -74,7 +74,7 @@ const Comment = (props: Props) => {
           <Button
             onClick={() => showMoreHandler && showMoreHandler(comment.id)}
           >
-            {'نمایش پاسخ ها'}
+            {"نمایش پاسخ ها"}
           </Button>
         )}
       </CardActions>
